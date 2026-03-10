@@ -1,0 +1,281 @@
+{
+  "name": "copilot-local-memory-extension",
+  "displayName": "Copilot Local Memory",
+  "description": "Track GitHub Copilot interactions locally and retrieve them without a remote service",
+  "version": "1.0.0",
+  "publisher": "Shuren-Li",
+  "author": "Shuren Li",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE.txt",
+    "package.json"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguageModelTool:copilotLocalMemory_logInteraction",
+    "onLanguageModelTool:copilotLocalMemory_queryInteractions",
+    "onLanguageModelTool:copilotLocalMemory_getRecentInteractions",
+    "onLanguageModelTool:copilotLocalMemory_summarizeInteractions",
+    "onLanguageModelTool:copilotLocalMemory_clearInteractions"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Copilot Local Memory",
+      "properties": {
+        "copilotLocalMemory.projectName": {
+          "type": "string",
+          "default": "",
+          "description": "Project name for local interaction history (defaults to workspace name)"
+        },
+        "copilotLocalMemory.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable local Copilot interaction storage"
+        },
+        "copilotLocalMemory.storePrompts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Store prompt text in local memory"
+        },
+        "copilotLocalMemory.storeResponses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Store Copilot response text in local memory"
+        },
+        "copilotLocalMemory.defaultQueryLimit": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Default maximum number of records returned by local memory query tools"
+        },
+        "copilotLocalMemory.postInteractionCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Optional shell command to run after a Copilot interaction is handled. For example on macOS: afplay /System/Library/Sounds/Glass.aiff"
+        },
+        "copilotLocalMemory.enablePostInteractionCommand": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the post-interaction command hook independently from local storage. If true, the hook can still run even when copilotLocalMemory.enabled is false."
+        }
+      }
+    },
+    "languageModelTools": [
+      {
+        "name": "copilotLocalMemory_logInteraction",
+        "displayName": "Copilot Local Memory: Log Interaction",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "logLocalInteraction",
+        "modelDescription": "Logs a Copilot interaction to a local SQLite-backed memory store in the VS Code extension storage.",
+        "description": "Store Copilot interaction metadata locally without any remote service or authentication.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["request_type"],
+          "properties": {
+            "request_type": {
+              "type": "string",
+              "description": "Agent or request type (for example, CopilotLogger or Requirement)."
+            },
+            "prompt_text": {
+              "type": "string",
+              "description": "User prompt text to store locally."
+            },
+            "response_text": {
+              "type": "string",
+              "description": "Assistant response text to store locally."
+            },
+            "model_version": {
+              "type": "string",
+              "description": "Model version string."
+            },
+            "finish_reason": {
+              "type": "string",
+              "description": "Finish reason."
+            },
+            "ticket_id": {
+              "type": "string",
+              "description": "Work item ID."
+            },
+            "ticket_description": {
+              "type": "string",
+              "description": "Short work item description."
+            },
+            "pull_request_id": {
+              "type": "string",
+              "description": "Pull request ID."
+            },
+            "project_name": {
+              "type": "string",
+              "description": "Override project name."
+            }
+          }
+        },
+        "tags": ["logging", "local-memory"]
+      },
+      {
+        "name": "copilotLocalMemory_queryInteractions",
+        "displayName": "Copilot Local Memory: Query Interactions",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "queryLocalInteractions",
+        "modelDescription": "Queries locally stored Copilot interactions by text, project, request type, and date range.",
+        "description": "Search the local Copilot memory store using optional filters.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "search_text": {
+              "type": "string",
+              "description": "Case-insensitive text to search across prompts, responses, and ticket descriptions."
+            },
+            "project_name": {
+              "type": "string",
+              "description": "Filter by project name."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Filter by request type."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "Inclusive ISO-8601 start timestamp."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "Inclusive ISO-8601 end timestamp."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of rows to return."
+            }
+          }
+        },
+        "tags": ["query", "local-memory"]
+      },
+      {
+        "name": "copilotLocalMemory_getRecentInteractions",
+        "displayName": "Copilot Local Memory: Get Recent Interactions",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "getRecentLocalInteractions",
+        "modelDescription": "Returns recent Copilot interactions stored locally, optionally filtered by project or request type.",
+        "description": "Fetch recent local Copilot interaction history.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "project_name": {
+              "type": "string",
+              "description": "Filter by project name."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Filter by request type."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of rows to return."
+            }
+          }
+        },
+        "tags": ["recent", "local-memory"]
+      },
+      {
+        "name": "copilotLocalMemory_summarizeInteractions",
+        "displayName": "Copilot Local Memory: Summarize Interactions",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "summarizeLocalInteractions",
+        "modelDescription": "Returns aggregate counts for locally stored Copilot interactions.",
+        "description": "Summarize local Copilot interaction history with optional filters and grouping.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "project_name": {
+              "type": "string",
+              "description": "Filter by project name."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Filter by request type."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "Inclusive ISO-8601 start timestamp."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "Inclusive ISO-8601 end timestamp."
+            },
+            "group_by": {
+              "type": "string",
+              "description": "Optional grouping field: request_type, project_name, model_version, or finish_reason."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of grouped rows to return."
+            }
+          }
+        },
+        "tags": ["summary", "analytics", "local-memory"]
+      },
+      {
+        "name": "copilotLocalMemory_clearInteractions",
+        "displayName": "Copilot Local Memory: Clear Interactions",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "clearLocalInteractions",
+        "modelDescription": "Deletes locally stored Copilot interactions using simple criteria such as project, request type, or records before a given date.",
+        "description": "Clear local Copilot interaction history using guarded deletion criteria.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "project_name": {
+              "type": "string",
+              "description": "Delete only interactions for this project name."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Delete only interactions for this request type."
+            },
+            "before_date": {
+              "type": "string",
+              "description": "Delete interactions with timestamp less than or equal to this ISO-8601 date."
+            },
+            "delete_all": {
+              "type": "boolean",
+              "description": "Set to true to delete all local interactions when no narrower criteria are provided."
+            }
+          }
+        },
+        "tags": ["cleanup", "delete", "local-memory"]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "build": "npm run compile",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --allow-missing-repository"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/sql.js": "^1.4.9",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.3"
+  }
+}
