@@ -1,0 +1,1 @@
+# copilot-local-memory-extension
