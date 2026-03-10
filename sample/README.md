@@ -164,7 +164,10 @@ The clear tool supports these simple criteria:
 
 Safety rule:
 
-- It will not delete everything unless `delete_all=true` is set explicitly.
+- Use one of these two modes:
+- Filtered delete: provide `project_name`, `request_type`, or `before_date`.
+- Full delete: set `delete_all=true`.
+- An empty request is rejected so the demo agent cannot clear everything by accident.
 
 ## Expected Behavior
 

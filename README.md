@@ -2,6 +2,8 @@
 
 Copilot Local Memory is a VS Code extension that stores Copilot chat interactions in local extension storage instead of sending them to a remote tracking service.
 
+Source code: https://github.com/lishuren/Copilot-Local-Memory-Extension
+
 ## Install In VS Code
 
 ### Option 1: Install the published extension
@@ -61,6 +63,34 @@ The easiest way to test the extension is to use two VS Code windows:
 3. Use the sample workspace as the test harness for local-memory logging, querying, summarizing, and clearing.
 
 The sample workspace has its own guide at `sample/README.md` and is intended to be the main place to validate the extension behavior.
+
+## Updating A Published Extension
+
+If you already published this extension and want to ship an update, you should bump the extension version in `package.json` before publishing again.
+
+Typical flow:
+
+1. Update `version` in `package.json`.
+2. Rebuild the extension with `npm run build`.
+3. Package it with `npm run package` if you want a local VSIX to test.
+4. Publish the new version to the Marketplace with `vsce publish` or `vsce publish patch|minor|major`.
+
+Notes:
+
+- For Marketplace updates, the version must increase. You cannot publish a second release with the same version number.
+- If you only install a VSIX locally for testing, bumping the version is still recommended so the update is obvious and consistent.
+- If you change marketplace-facing metadata such as `displayName`, `description`, `icon`, `README`, or repository links, republish the extension so those changes appear in the Marketplace.
+
+### Release Checklist
+
+Before publishing an update:
+
+1. Update the `version` in `package.json`.
+2. Add a short changelog note in `CHANGELOG.md` for what changed in this release.
+3. Run `npm run build`.
+4. Run `npm run package` and test the VSIX locally if the change affects packaging, activation, tools, or Marketplace metadata.
+5. Publish with `vsce publish` or `vsce publish patch|minor|major`.
+6. Confirm the Marketplace page shows the expected icon, README, and repository links.
 
 ## Setup
 
@@ -386,7 +416,7 @@ After installing a SQLite viewer extension:
 4. Paste the full database path:
 
 ```text
-/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
 ```
 
 5. Press `Enter` and open the file.
@@ -395,7 +425,7 @@ After installing a SQLite viewer extension:
 If you prefer to open the folder first, use:
 
 ```text
-/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
 ```
 
 ### Open it in the VS Code terminal
@@ -403,7 +433,7 @@ If you prefer to open the folder first, use:
 If you have the SQLite CLI installed, you can inspect the DB directly from the integrated terminal:
 
 ```bash
-sqlite3 "~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite"
+sqlite3 "$HOME/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite"
 ```
 
 Then run:
@@ -422,19 +452,19 @@ If the file does not open, check these common cases first.
 This will fail on macOS because `Application Support` contains a space:
 
 ```bash
-ls /Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+ls ~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
 ```
 
 Use either quotes:
 
 ```bash
-ls "/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/"
+ls "$HOME/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/"
 ```
 
 Or escaped spaces:
 
 ```bash
-ls /Users/sli3/Library/Application\ Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+ls ~/Library/Application\ Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
 ```
 
 #### 2. The database file does not exist yet
@@ -475,7 +505,10 @@ Supported criteria:
 
 Safety rule:
 
-- You must provide at least one criterion, or explicitly set `delete_all` to `true`.
+- There are only two valid modes:
+- Filtered delete: provide one or more of `project_name`, `request_type`, or `before_date`.
+- Full delete: set `delete_all` to `true`.
+- An empty object is rejected on purpose so the tool cannot wipe data accidentally.
 
 Examples:
 
