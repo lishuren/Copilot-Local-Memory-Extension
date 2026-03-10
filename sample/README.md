@@ -33,9 +33,12 @@ This demo keeps `project_name`, `ticket_id`, and `pull_request_id` in the record
 
 1. Install the local extension: `Shuren-Li.copilot-local-memory-extension`
 2. Open this `LogUsage` folder in VS Code
-3. Use the `@DemoLogUsage` agent in Copilot Chat
+3. Open the `DemoLogUsage` agent tool configuration and make sure the local-memory tools are enabled for that agent
+4. Use the `@DemoLogUsage` agent in Copilot Chat
 
 This workspace already includes local-memory settings in `.vscode/settings.json`.
+
+The extension being installed is not enough by itself for custom-agent testing. The `DemoLogUsage` agent also needs the local-memory tools enabled in its tool list; otherwise the agent cannot invoke them.
 
 ## Current Local Settings
 
@@ -169,6 +172,12 @@ Safety rule:
 - Retrieval requests should use the appropriate local-memory tool before the final answer.
 - Clear requests should use the clear tool with criteria or an explicit full-wipe confirmation.
 - A sound should play after the interaction because `copilotLocalMemory.postInteractionCommand` is configured.
+
+## Finish Reason Behavior
+
+- `finish_reason` is stored only when the tool caller includes it in the `copilotLocalMemory_logInteraction` input.
+- In the current VS Code custom-agent flow, the actual finish reason is usually not exposed to the agent automatically.
+- Because of that, an empty `finish_reason` value in the SQLite table is expected for `@DemoLogUsage` unless you have another caller that can populate it explicitly.
 
 ## Related Files
 

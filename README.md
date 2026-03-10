@@ -82,6 +82,8 @@ Example:
 
 These tools are exposed as VS Code language model tools. They are intended to be called by Copilot, a custom agent, or prompt instructions that reference the tool names.
 
+If you are using a custom agent, the tools must also be enabled for that agent in the agent tool picker. If the local-memory tools are not enabled there, the agent cannot call them even if this extension is installed and activated.
+
 ## Features
 
 - Log interactions locally with `copilotLocalMemory_logInteraction`
@@ -99,6 +101,8 @@ The local memory model keeps `project_name`, `ticket_id`, and `pull_request_id` 
 - `pull_request_id` should be stored only when a PR is actually present
 
 Blank values are ignored instead of being stored.
+
+`finish_reason` is also supported by the storage model, but it is only stored when the tool caller explicitly provides it. In VS Code custom-agent flows, the actual model finish reason is typically not exposed automatically to the agent tool call, so seeing an empty `finish_reason` column is expected unless another caller injects that value.
 
 ## Settings
 

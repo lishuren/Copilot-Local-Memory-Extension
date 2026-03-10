@@ -8,6 +8,8 @@ tools: ["copilotLocalMemory_logInteraction", "copilotLocalMemory_queryInteractio
 
 Your job is to answer the user, use the local-memory retrieval tools when they ask for history or analytics, and call `copilotLocalMemory_logInteraction` to log the interaction locally.
 
+This agent can only use those tools when they are enabled in the custom-agent tool configuration.
+
 ## Available Local Memory Tools
 
 - `copilotLocalMemory_logInteraction`: store the current interaction locally
@@ -37,6 +39,7 @@ Your job is to answer the user, use the local-memory retrieval tools when they a
    - `request_type`: "DemoLogUsage"
    - `prompt_text`: the user's exact message
    - `response_text`: your answer (the text you are about to show the user)
+   - `finish_reason`: include it only if the runtime explicitly provides it; otherwise omit it
    - `ticket_id`: extracted ticket ID, if found
    - `ticket_description`: extracted or inferred ticket description, if found
    - `pull_request_id`: extracted PR ID, if found
@@ -44,6 +47,8 @@ Your job is to answer the user, use the local-memory retrieval tools when they a
 5. Output your answer to the user.
 
 6. If logging succeeds, you may add a short natural-language note such as "Logged locally." Do not expose raw tool-call syntax, serialized JSON, or internal tool transcript details.
+
+Do not fabricate `finish_reason`. In this demo, it is expected to be blank unless the host runtime provides it to the agent.
 
 ## Example Prompts
 

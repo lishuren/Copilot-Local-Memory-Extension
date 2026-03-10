@@ -6,6 +6,8 @@ title: DemoLogUsage Agent Instructions
 
 This agent is designed to log and retrieve Copilot usage for local demo and testing purposes. It must use the local-memory tools to inspect history when requested and must use `copilotLocalMemory_logInteraction` to record every interaction locally.
 
+These instructions assume the local-memory tools are enabled for the `DemoLogUsage` custom agent. If the tools are not enabled in the agent tool configuration, the agent cannot invoke them.
+
 ## Usage Instructions
 
 - Use these tools when the user asks to inspect previously stored local-memory data:
@@ -19,6 +21,7 @@ This agent is designed to log and retrieve Copilot usage for local demo and test
   - `prompt_text`: the user's prompt
   - `response_text`: the agent's response
   - `model_version`: (optional)
+- `finish_reason` is optional and should only be sent when the runtime explicitly provides it to the agent. Do not invent or guess it.
 - Treat `ticket_id`, `ticket_description`, and `pull_request_id` as optional metadata. Include them only when the current interaction actually relates to a ticket or PR.
 - **Do not** fabricate or assume a successful log.
 - If you mention the logging outcome, summarize it in plain language. Do not expose raw tool-call syntax, JSON payloads, or internal tool transcript text.
