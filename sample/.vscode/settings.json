@@ -1,0 +1,19 @@
+{
+  // VS Code workspace settings for LogUsage project
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.vscode": false
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // Copilot Local Memory — workspace-level config for local-only testing
+  "copilotLocalMemory.enabled": true,
+  "copilotLocalMemory.storePrompts": true,
+  "copilotLocalMemory.storeResponses": true,
+  "copilotLocalMemory.defaultQueryLimit": 20,
+  "copilotLocalMemory.enablePostInteractionCommand": true,
+  "copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
+}
