@@ -2,6 +2,75 @@
 
 Copilot Local Memory is a VS Code extension that stores Copilot chat interactions in local extension storage instead of sending them to a remote tracking service.
 
+## Install In VS Code
+
+### Option 1: Install the published extension
+
+1. Open the Extensions view in VS Code.
+2. Search for `Copilot Local Memory`.
+3. Install `Shuren-Li.copilot-local-memory-extension`.
+
+### Option 2: Install from this source repository
+
+1. Clone this repository and open it in VS Code.
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Build the extension:
+
+```bash
+npm run build
+```
+
+4. Package the extension into a VSIX:
+
+```bash
+npm run package
+```
+
+5. Install the generated `.vsix` file using either:
+
+- `Extensions: Install from VSIX...` from the Command Palette
+- `code --install-extension copilot-local-memory-extension-<version>.vsix`
+
+### Option 3: Run it in an Extension Development Host
+
+Use this if you are developing or testing the extension locally.
+
+1. Open this repository in VS Code.
+2. Run:
+
+```bash
+npm install
+npm run build
+```
+
+3. Press `F5` in VS Code.
+4. In the new Extension Development Host window, open Copilot Chat and test the tools there.
+
+## Setup
+
+After installation, configure the extension in your VS Code settings if you want to override the defaults.
+
+Example:
+
+```json
+{
+	"copilotLocalMemory.enabled": true,
+	"copilotLocalMemory.projectName": "my-workspace",
+	"copilotLocalMemory.storePrompts": true,
+	"copilotLocalMemory.storeResponses": true,
+	"copilotLocalMemory.defaultQueryLimit": 20,
+	"copilotLocalMemory.enablePostInteractionCommand": true,
+	"copilotLocalMemory.postInteractionCommand": "say Mission accomplished. Victory lap canceled. Back to work."
+}
+```
+
+These tools are exposed as VS Code language model tools. They are intended to be called by Copilot, a custom agent, or prompt instructions that reference the tool names.
+
 ## Features
 
 - Log interactions locally with `copilotLocalMemory_logInteraction`
@@ -30,11 +99,229 @@ Blank values are ignored instead of being stored.
 - `copilotLocalMemory.postInteractionCommand`
 - `copilotLocalMemory.enablePostInteractionCommand`
 
+## Example Usage
+
+The examples below show the expected tool inputs and the result shape returned by the extension.
+
+### 1. Log an interaction
+
+Tool: `copilotLocalMemory_logInteraction`
+
+Example input:
+
+```json
+{
+	"request_type": "Requirement",
+	"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
+	"response_text": "The ticket is about retry logic in the payment worker.",
+	"model_version": "gpt-5.4",
+	"finish_reason": "stop",
+	"ticket_id": "ADO-4321",
+	"ticket_description": "Payment worker retry issue",
+	"project_name": "billing-service"
+}
+```
+
+Typical result:
+
+```json
+{
+	"success": true,
+	"message": "Interaction stored locally.",
+	"record": {
+		"id": 1,
+		"project_name": "billing-service",
+		"request_type": "Requirement",
+		"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
+		"response_text": "The ticket is about retry logic in the payment worker.",
+		"model_version": "gpt-5.4",
+		"finish_reason": "stop",
+		"ticket_id": "ADO-4321",
+		"ticket_description": "Payment worker retry issue",
+		"timestamp": "2026-03-10T12:00:00.000Z"
+	},
+	"stored": true,
+	"post_interaction_command_executed": false
+}
+```
+
+### 2. Query interactions
+
+Tool: `copilotLocalMemory_queryInteractions`
+
+Example input:
+
+```json
+{
+	"search_text": "payment retry",
+	"project_name": "billing-service",
+	"request_type": "Requirement",
+	"start_date": "2026-03-01T00:00:00Z",
+	"end_date": "2026-03-31T23:59:59Z",
+	"limit": 10
+}
+```
+
+Typical result:
+
+```json
+{
+	"success": true,
+	"count": 1,
+	"records": [
+		{
+			"id": 1,
+			"project_name": "billing-service",
+			"request_type": "Requirement",
+			"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
+			"response_text": "The ticket is about retry logic in the payment worker.",
+			"model_version": "gpt-5.4",
+			"finish_reason": "stop",
+			"ticket_id": "ADO-4321",
+			"ticket_description": "Payment worker retry issue",
+			"pull_request_id": null,
+			"timestamp": "2026-03-10T12:00:00.000Z"
+		}
+	]
+}
+```
+
+### 3. Get recent interactions
+
+Tool: `copilotLocalMemory_getRecentInteractions`
+
+Example input:
+
+```json
+{
+	"project_name": "billing-service",
+	"limit": 5
+}
+```
+
+Typical result:
+
+```json
+{
+	"success": true,
+	"count": 5,
+	"records": [
+		{
+			"id": 8,
+			"project_name": "billing-service",
+			"request_type": "Requirement",
+			"timestamp": "2026-03-10T15:17:41.000Z"
+		}
+	]
+}
+```
+
+### 4. Summarize interactions
+
+Tool: `copilotLocalMemory_summarizeInteractions`
+
+Example input:
+
+```json
+{
+	"project_name": "billing-service",
+	"start_date": "2026-03-01T00:00:00Z",
+	"end_date": "2026-03-31T23:59:59Z",
+	"group_by": "request_type",
+	"limit": 10
+}
+```
+
+Typical result:
+
+```json
+{
+	"success": true,
+	"total_count": 18,
+	"grouped_by": "request_type",
+	"grouped_counts": [
+		{
+			"key": "Requirement",
+			"count": 9
+		},
+		{
+			"key": "CodeReview",
+			"count": 6
+		},
+		{
+			"key": "BugFix",
+			"count": 3
+		}
+	]
+}
+```
+
+Valid `group_by` values are:
+
+- `request_type`
+- `project_name`
+- `model_version`
+- `finish_reason`
+
+### 5. Clear interactions
+
+Tool: `copilotLocalMemory_clearInteractions`
+
+Example input using criteria:
+
+```json
+{
+	"project_name": "billing-service",
+	"before_date": "2026-03-01T00:00:00Z"
+}
+```
+
+Typical result:
+
+```json
+{
+	"success": true,
+	"message": "Local interactions deleted.",
+	"deleted_count": 4,
+	"delete_all": false,
+	"criteria": {
+		"project_name": "billing-service",
+		"before_date": "2026-03-01T00:00:00Z"
+	}
+}
+```
+
+Example input to clear everything:
+
+```json
+{
+	"delete_all": true
+}
+```
+
+### Example prompts for a custom agent
+
+If you have a custom Copilot agent wired to these tools, prompts can be as simple as:
+
+- `Store this interaction in local memory for billing-service.`
+- `Search local memory for ADO-4321.`
+- `Show the 5 most recent local interactions for billing-service.`
+- `Summarize local interactions by model version.`
+- `Clear local memory before 2026-03-01 for billing-service.`
+
 ## Post-Interaction Command
 
 If you want a local notification after each interaction, set `copilotLocalMemory.postInteractionCommand`.
 
-Example on macOS:
+Example on macOS using the system voice:
+
+```json
+{
+	"copilotLocalMemory.postInteractionCommand": "say Mission accomplished. Victory lap canceled. Back to work."
+}
+```
+
+Another macOS example using a sound effect:
 
 ```json
 {
