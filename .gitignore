@@ -1,2 +1,8 @@
 dist
 .DS_Store
+node_modules
+*.vsix
+.vscode-test
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

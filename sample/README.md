@@ -173,5 +173,5 @@ Safety rule:
 ## Related Files
 
 - `.github/agents/DemoLogUsage.agent.md`
-- `.github/copilot-instruction.md`
+- `.github/copilot-instructions.md`
 - `.vscode/settings.json`

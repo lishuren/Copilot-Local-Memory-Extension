@@ -43,7 +43,7 @@ Your job is to answer the user, use the local-memory retrieval tools when they a
 
 5. Output your answer to the user.
 
-6. Append the raw string returned by the log tool in parentheses.
+6. If logging succeeds, you may add a short natural-language note such as "Logged locally." Do not expose raw tool-call syntax, serialized JSON, or internal tool transcript details.
 
 ## Example Prompts
 

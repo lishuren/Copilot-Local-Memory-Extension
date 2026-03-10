@@ -49,7 +49,18 @@ npm run build
 ```
 
 3. Press `F5` in VS Code.
-4. In the new Extension Development Host window, open Copilot Chat and test the tools there.
+4. In the new Extension Development Host window, open the `sample` folder from this repository in a separate workspace window.
+5. In that sample window, open Copilot Chat and test the tools there.
+
+### Recommended local test flow
+
+The easiest way to test the extension is to use two VS Code windows:
+
+1. Window 1: open this extension repository and press `F5` to launch the Extension Development Host.
+2. Window 2: inside the Extension Development Host, open the `sample` folder from this repository.
+3. Use the sample workspace as the test harness for local-memory logging, querying, summarizing, and clearing.
+
+The sample workspace has its own guide at `sample/README.md` and is intended to be the main place to validate the extension behavior.
 
 ## Setup
 
@@ -332,6 +343,120 @@ Another macOS example using a sound effect:
 The hook is controlled separately by `copilotLocalMemory.enablePostInteractionCommand`.
 
 If `copilotLocalMemory.enabled` is `false` but `copilotLocalMemory.enablePostInteractionCommand` is `true`, the extension skips local storage and still runs the configured post-interaction command when the log tool is invoked.
+
+## Inspect The SQLite Database
+
+The extension stores data in a local SQLite file named `copilot-local-memory.sqlite`.
+
+On macOS, the file is typically located under VS Code global storage:
+
+```text
+~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+```
+
+If you are using VS Code Insiders, the base path is usually:
+
+```text
+~/Library/Application Support/Code - Insiders/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+```
+
+If you are not sure where the file is, run:
+
+```bash
+find ~/Library/Application\ Support -name copilot-local-memory.sqlite 2>/dev/null
+```
+
+### Open it in VS Code
+
+Recommended extension:
+
+```vscode-extensions
+bowlerr.sqlite-intelliview-vscode
+```
+
+After installing a SQLite viewer extension:
+
+1. Open the Command Palette.
+2. Run the extension's database open command.
+3. When the macOS file picker opens, press `Cmd+Shift+G` to open the "Go to the folder" input.
+4. Paste the full database path:
+
+```text
+/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+```
+
+5. Press `Enter` and open the file.
+6. Browse the `copilot_usage` table.
+
+If you prefer to open the folder first, use:
+
+```text
+/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+```
+
+### Open it in the VS Code terminal
+
+If you have the SQLite CLI installed, you can inspect the DB directly from the integrated terminal:
+
+```bash
+sqlite3 "~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite"
+```
+
+Then run:
+
+```sql
+.tables
+SELECT * FROM copilot_usage LIMIT 10;
+```
+
+### Troubleshooting
+
+If the file does not open, check these common cases first.
+
+#### 1. The shell path fails because of spaces
+
+This will fail on macOS because `Application Support` contains a space:
+
+```bash
+ls /Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+```
+
+Use either quotes:
+
+```bash
+ls "/Users/sli3/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/"
+```
+
+Or escaped spaces:
+
+```bash
+ls /Users/sli3/Library/Application\ Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+```
+
+#### 2. The database file does not exist yet
+
+The SQLite file is only created after the extension initializes and successfully writes local memory.
+
+If this returns nothing:
+
+```bash
+find "$HOME/Library/Application Support/Code/User/globalStorage" -name "copilot-local-memory.sqlite"
+```
+
+then the database has not been created in the current VS Code profile yet.
+
+#### 3. The chat session says local-memory logging is unavailable
+
+If Copilot responds with a message like `Local-memory logging unavailable in this session`, the local-memory tool was not available in that window or session, so no database write happened.
+
+The most reliable local test flow is:
+
+1. Open this extension repository in VS Code.
+2. Run `npm install` and `npm run build` if needed.
+3. Press `F5` to start the Extension Development Host.
+4. In the new host window, open the `sample` folder from this repository.
+5. Use Copilot Chat in that sample workspace to trigger the local-memory tools.
+6. Check again for `copilot-local-memory.sqlite` after the interaction completes.
 
 ## Clear Local Memory
 

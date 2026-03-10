@@ -3,9 +3,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-EXT_DIR="$ROOT_DIR/copilot-local-memory-extension"
-VSCE_BIN="$ROOT_DIR/node_modules/.bin/vsce"
+ROOT_DIR="$SCRIPT_DIR"
+EXT_DIR="$ROOT_DIR"
+VSCE_BIN="$EXT_DIR/node_modules/.bin/vsce"
 TMP_DIR="$(mktemp -d "$ROOT_DIR/.copilot-local-memory-package.XXXXXX")"
 
 cleanup() {
