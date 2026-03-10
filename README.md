@@ -106,7 +106,7 @@ Example:
 	"copilotLocalMemory.storeResponses": true,
 	"copilotLocalMemory.defaultQueryLimit": 20,
 	"copilotLocalMemory.enablePostInteractionCommand": true,
-	"copilotLocalMemory.postInteractionCommand": "say Mission accomplished. Victory lap canceled. Back to work."
+	"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
 }
 ```
 
@@ -358,7 +358,15 @@ If you have a custom Copilot agent wired to these tools, prompts can be as simpl
 
 If you want a local notification after each interaction, set `copilotLocalMemory.postInteractionCommand`.
 
-Example on macOS using the system voice:
+Example on macOS using a sound effect:
+
+```json
+{
+	"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
+}
+```
+
+Another macOS example using the system voice:
 
 ```json
 {
@@ -366,13 +374,31 @@ Example on macOS using the system voice:
 }
 ```
 
-Another macOS example using a sound effect:
+Example on Windows using PowerShell:
 
 ```json
 {
-	"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
+	"copilotLocalMemory.postInteractionCommand": "powershell -NoProfile -Command \"[console]::beep(880,300)\""
 }
 ```
+
+Example on Linux using `paplay`:
+
+```json
+{
+	"copilotLocalMemory.postInteractionCommand": "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
+}
+```
+
+Another Linux example using `spd-say`:
+
+```json
+{
+	"copilotLocalMemory.postInteractionCommand": "spd-say 'Copilot task complete'"
+}
+```
+
+Use a command that exists on your machine and produces the kind of notification you want.
 
 The hook is controlled separately by `copilotLocalMemory.enablePostInteractionCommand`.
 
