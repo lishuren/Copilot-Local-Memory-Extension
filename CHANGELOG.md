@@ -6,6 +6,14 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Released]
 
+## [1.2.0] - 2026-03-11
+
+### Changed
+
+- Documented the post-interaction command as a general completion hook, not just a sound option.
+- Added a Windows Alarm01 example alongside the macOS sound example.
+- Clarified that post-interaction command failures are logged and do not interrupt interaction storage.
+
 ## [1.1.1] - 2026-03-10
 
 ### Added

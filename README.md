@@ -54,6 +54,39 @@ This is a practical starting point:
 }
 ```
 
+## Post-Interaction Command
+
+`copilotLocalMemory.enablePostInteractionCommand` enables a completion hook.
+
+`copilotLocalMemory.postInteractionCommand` is not limited to playing a sound. It can run any shell command after the interaction is done. A sound is just one useful example when Copilot takes a while and you want VS Code to give you a clear completion signal.
+
+Examples:
+
+- macOS sound:
+
+```json
+"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
+```
+
+- Windows Alarm01 sound:
+
+```json
+"copilotLocalMemory.postInteractionCommand": "powershell -Command \"(New-Object System.Media.SoundPlayer 'C:\\Windows\\Media\\Alarm01.wav').PlaySync()\""
+```
+
+- Any shell command:
+
+```json
+"copilotLocalMemory.postInteractionCommand": "echo 'Copilot interaction finished'"
+```
+
+Behavior:
+
+- The command runs asynchronously and does not block the main interaction flow.
+- The command runs through the system shell after the interaction finishes processing.
+- If the command fails, the interaction still completes and any local-memory write is not rolled back.
+- Command errors are written to the `Copilot Local Memory` output channel instead of being shown as a popup notification.
+
 ## What Is Stored Locally?
 
 Data is stored only when a local-memory tool is invoked.

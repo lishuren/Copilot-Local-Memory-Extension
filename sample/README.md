@@ -67,6 +67,16 @@ If the editor shows `Unknown tool` warnings in the sample agent files, install o
 }
 ```
 
+The post-interaction command is a general completion hook. It can run any shell command after the interaction is done, and playing a sound is just one practical example for long-running Copilot tasks.
+
+Windows example:
+
+```json
+"copilotLocalMemory.postInteractionCommand": "powershell -Command \"(New-Object System.Media.SoundPlayer 'C:\\Windows\\Media\\Alarm01.wav').PlaySync()\""
+```
+
+If the configured command fails, the interaction still completes. The error is logged to the `Copilot Local Memory` output channel.
+
 ## Quick Test Flow
 
 1. Log a normal interaction.
