@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Released]
 
+## [1.2.1] - 2026-03-11
+
+### Changed
+
+- Updated the Marketplace categories from `Other` to `AI` and `Chat` to better match the extension's Copilot-focused behavior.
+
 ## [1.2.0] - 2026-03-11
 
 ### Changed
