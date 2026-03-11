@@ -152,7 +152,7 @@ function hasClearCriteria(filters: ClearFilters): boolean {
 
 function createToolResult(payload: unknown): vscode.LanguageModelToolResult {
   return new vscode.LanguageModelToolResult([
-    vscode.LanguageModelDataPart.text(JSON.stringify(payload, null, 2)),
+    new vscode.LanguageModelTextPart(JSON.stringify(payload, null, 2)),
   ]);
 }
 

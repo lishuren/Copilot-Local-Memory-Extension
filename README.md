@@ -27,6 +27,18 @@ Copilot Local Memory saves selected GitHub Copilot chat interactions in a local 
 
 The local database file is created after the first successful write.
 
+For a minimal end-to-end check, use these two prompts in order:
+
+```text
+@LocalMemoryAgent Explain what this repository does and log the interaction locally.
+```
+
+```text
+@LocalMemoryAsk Show the 5 most recent local interactions and summarize the pattern.
+```
+
+The first prompt creates a record. The second prompt verifies retrieval in a separate turn, which matters because the current interaction is only logged after the answer is formed.
+
 ## Which Option Should I Use?
 
 | Option | Best For | Notes |
@@ -86,6 +98,12 @@ Behavior:
 - The command runs through the system shell after the interaction finishes processing.
 - If the command fails, the interaction still completes and any local-memory write is not rolled back.
 - Command errors are written to the `Copilot Local Memory` output channel instead of being shown as a popup notification.
+
+## Refresh Behavior
+
+Changing `copilotLocalMemory.*` settings should not require a reload because the extension reads configuration when the local-memory tools are invoked.
+
+Changing `.agent.md` files or enabling tools for an agent in Copilot Chat can depend on the current chat session state. Usually, starting a new chat or reopening the chat view is enough. If Copilot still behaves as if the old tool configuration is cached, reload the VS Code window. Closing and reopening VS Code is the fallback if the session stays stale.
 
 ## What Is Stored Locally?
 

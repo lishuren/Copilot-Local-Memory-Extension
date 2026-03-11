@@ -6,6 +6,16 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Released]
 
+## [1.3.0] - 2026-03-11
+
+### Fixed
+
+- Returned local-memory tool results as chat text parts instead of data parts so Copilot no longer surfaces them as `file.bin` attachments during agent flows.
+
+### Changed
+
+- Expanded the sample and root documentation with a two-prompt smoke test and refresh-behavior guidance for settings, agent changes, and tool selection.
+
 ## [1.2.1] - 2026-03-11
 
 ### Changed
