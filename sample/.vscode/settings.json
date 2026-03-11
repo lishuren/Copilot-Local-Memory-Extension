@@ -11,6 +11,7 @@
 
   // Copilot Local Memory — workspace-level config for local-only testing
   "copilotLocalMemory.enabled": true,
+  "copilotLocalMemory.projectName": "LogUsage",
   "copilotLocalMemory.storePrompts": true,
   "copilotLocalMemory.storeResponses": true,
   "copilotLocalMemory.defaultQueryLimit": 20,

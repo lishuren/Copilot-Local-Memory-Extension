@@ -1,558 +1,436 @@
 # Copilot Local Memory
 
-Copilot Local Memory is a VS Code extension that stores Copilot chat interactions in local extension storage instead of sending them to a remote tracking service.
-
-Source code: https://github.com/lishuren/Copilot-Local-Memory-Extension
-
-## Install In VS Code
-
-### Option 1: Install the published extension
-
-1. Open the Extensions view in VS Code.
-2. Search for `Copilot Local Memory`.
-3. Install `Shuren-Li.copilot-local-memory-extension`.
-
-### Option 2: Install from this source repository
-
-1. Clone this repository and open it in VS Code.
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Build the extension:
-
-```bash
-npm run build
-```
-
-4. Package the extension into a VSIX:
-
-```bash
-npm run package
-```
-
-5. Install the generated `.vsix` file using either:
-
-- `Extensions: Install from VSIX...` from the Command Palette
-- `code --install-extension copilot-local-memory-extension-<version>.vsix`
-
-### Option 3: Run it in an Extension Development Host
-
-Use this if you are developing or testing the extension locally.
-
-1. Open this repository in VS Code.
-2. Run:
-
-```bash
-npm install
-npm run build
-```
-
-3. Press `F5` in VS Code.
-4. In the new Extension Development Host window, open the `sample` folder from this repository in a separate workspace window.
-5. In that sample window, open Copilot Chat and test the tools there.
-
-### Recommended local test flow
-
-The easiest way to test the extension is to use two VS Code windows:
-
-1. Window 1: open this extension repository and press `F5` to launch the Extension Development Host.
-2. Window 2: inside the Extension Development Host, open the `sample` folder from this repository.
-3. Use the sample workspace as the test harness for local-memory logging, querying, summarizing, and clearing.
-
-The sample workspace has its own guide at `sample/README.md` and is intended to be the main place to validate the extension behavior.
-
-## Updating A Published Extension
-
-If you already published this extension and want to ship an update, you should bump the extension version in `package.json` before publishing again.
-
-Typical flow:
-
-1. Update `version` in `package.json`.
-2. Rebuild the extension with `npm run build`.
-3. Package it with `npm run package` if you want a local VSIX to test.
-4. Publish the new version to the Marketplace with `vsce publish` or `vsce publish patch|minor|major`.
-
-Notes:
-
-- For Marketplace updates, the version must increase. You cannot publish a second release with the same version number.
-- If you only install a VSIX locally for testing, bumping the version is still recommended so the update is obvious and consistent.
-- If you change marketplace-facing metadata such as `displayName`, `description`, `icon`, `README`, or repository links, republish the extension so those changes appear in the Marketplace.
-
-### Release Checklist
-
-Before publishing an update:
-
-1. Update the `version` in `package.json`.
-2. Add a short changelog note in `CHANGELOG.md` for what changed in this release.
-3. Run `npm run build`.
-4. Run `npm run package` and test the VSIX locally if the change affects packaging, activation, tools, or Marketplace metadata.
-5. Publish with `vsce publish` or `vsce publish patch|minor|major`.
-6. Confirm the Marketplace page shows the expected icon, README, and repository links.
-
-## Setup
-
-After installation, configure the extension in your VS Code settings if you want to override the defaults.
-
-Example:
-
-```json
-{
-	"copilotLocalMemory.enabled": true,
-	"copilotLocalMemory.projectName": "my-workspace",
-	"copilotLocalMemory.storePrompts": true,
-	"copilotLocalMemory.storeResponses": true,
-	"copilotLocalMemory.defaultQueryLimit": 20,
-	"copilotLocalMemory.enablePostInteractionCommand": true,
-	"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
-}
-```
-
-These tools are exposed as VS Code language model tools. They are intended to be called by Copilot, a custom agent, or prompt instructions that reference the tool names.
-
-If you are using a custom agent, the tools must also be enabled for that agent in the agent tool picker. If the local-memory tools are not enabled there, the agent cannot call them even if this extension is installed and activated.
-
-## Features
-
-- Log interactions locally with `copilotLocalMemory_logInteraction`
-- Query or search prior interactions with `copilotLocalMemory_queryInteractions`
-- Fetch recent interactions with `copilotLocalMemory_getRecentInteractions`
-- Summarize local interaction history with `copilotLocalMemory_summarizeInteractions`
-- Clear local interaction history with `copilotLocalMemory_clearInteractions`
-
-## Optional Metadata
-
-The local memory model keeps `project_name`, `ticket_id`, and `pull_request_id` because they improve retrieval and cleanup, but they are optional metadata:
-
-- `project_name` can come from the agent payload or workspace fallback
-- `ticket_id` should be stored only when a ticket is actually present
-- `pull_request_id` should be stored only when a PR is actually present
-
-Blank values are ignored instead of being stored.
-
-`finish_reason` is also supported by the storage model, but it is only stored when the tool caller explicitly provides it. In VS Code custom-agent flows, the actual model finish reason is typically not exposed automatically to the agent tool call, so seeing an empty `finish_reason` column is expected unless another caller injects that value.
-
-## Settings
-
-- `copilotLocalMemory.enabled`
-- `copilotLocalMemory.projectName`
-- `copilotLocalMemory.storePrompts`
-- `copilotLocalMemory.storeResponses`
-- `copilotLocalMemory.defaultQueryLimit`
-- `copilotLocalMemory.postInteractionCommand`
-- `copilotLocalMemory.enablePostInteractionCommand`
-
-## Example Usage
-
-The examples below show the expected tool inputs and the result shape returned by the extension.
-
-### 1. Log an interaction
-
-Tool: `copilotLocalMemory_logInteraction`
-
-Example input:
-
-```json
-{
-	"request_type": "Requirement",
-	"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
-	"response_text": "The ticket is about retry logic in the payment worker.",
-	"model_version": "gpt-5.4",
-	"finish_reason": "stop",
-	"ticket_id": "ADO-4321",
-	"ticket_description": "Payment worker retry issue",
-	"project_name": "billing-service"
-}
-```
-
-Typical result:
-
-```json
-{
-	"success": true,
-	"message": "Interaction stored locally.",
-	"record": {
-		"id": 1,
-		"project_name": "billing-service",
-		"request_type": "Requirement",
-		"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
-		"response_text": "The ticket is about retry logic in the payment worker.",
-		"model_version": "gpt-5.4",
-		"finish_reason": "stop",
-		"ticket_id": "ADO-4321",
-		"ticket_description": "Payment worker retry issue",
-		"timestamp": "2026-03-10T12:00:00.000Z"
-	},
-	"stored": true,
-	"post_interaction_command_executed": false
-}
-```
-
-### 2. Query interactions
-
-Tool: `copilotLocalMemory_queryInteractions`
-
-Example input:
-
-```json
-{
-	"search_text": "payment retry",
-	"project_name": "billing-service",
-	"request_type": "Requirement",
-	"start_date": "2026-03-01T00:00:00Z",
-	"end_date": "2026-03-31T23:59:59Z",
-	"limit": 10
-}
-```
-
-Typical result:
-
-```json
-{
-	"success": true,
-	"count": 1,
-	"records": [
-		{
-			"id": 1,
-			"project_name": "billing-service",
-			"request_type": "Requirement",
-			"prompt_text": "Summarize ticket ADO-4321 and suggest next steps.",
-			"response_text": "The ticket is about retry logic in the payment worker.",
-			"model_version": "gpt-5.4",
-			"finish_reason": "stop",
-			"ticket_id": "ADO-4321",
-			"ticket_description": "Payment worker retry issue",
-			"pull_request_id": null,
-			"timestamp": "2026-03-10T12:00:00.000Z"
-		}
-	]
-}
-```
-
-### 3. Get recent interactions
-
-Tool: `copilotLocalMemory_getRecentInteractions`
-
-Example input:
-
-```json
-{
-	"project_name": "billing-service",
-	"limit": 5
-}
-```
-
-Typical result:
-
-```json
-{
-	"success": true,
-	"count": 5,
-	"records": [
-		{
-			"id": 8,
-			"project_name": "billing-service",
-			"request_type": "Requirement",
-			"timestamp": "2026-03-10T15:17:41.000Z"
-		}
-	]
-}
-```
-
-### 4. Summarize interactions
-
-Tool: `copilotLocalMemory_summarizeInteractions`
-
-Example input:
-
-```json
-{
-	"project_name": "billing-service",
-	"start_date": "2026-03-01T00:00:00Z",
-	"end_date": "2026-03-31T23:59:59Z",
-	"group_by": "request_type",
-	"limit": 10
-}
-```
-
-Typical result:
-
-```json
-{
-	"success": true,
-	"total_count": 18,
-	"grouped_by": "request_type",
-	"grouped_counts": [
-		{
-			"key": "Requirement",
-			"count": 9
-		},
-		{
-			"key": "CodeReview",
-			"count": 6
-		},
-		{
-			"key": "BugFix",
-			"count": 3
-		}
-	]
-}
-```
-
-Valid `group_by` values are:
-
-- `request_type`
-- `project_name`
-- `model_version`
-- `finish_reason`
-
-### 5. Clear interactions
-
-Tool: `copilotLocalMemory_clearInteractions`
-
-Example input using criteria:
-
-```json
-{
-	"project_name": "billing-service",
-	"before_date": "2026-03-01T00:00:00Z"
-}
-```
-
-Typical result:
-
-```json
-{
-	"success": true,
-	"message": "Local interactions deleted.",
-	"deleted_count": 4,
-	"delete_all": false,
-	"criteria": {
-		"project_name": "billing-service",
-		"before_date": "2026-03-01T00:00:00Z"
-	}
-}
-```
-
-Example input to clear everything:
-
-```json
-{
-	"delete_all": true
-}
-```
-
-### Example prompts for a custom agent
-
-If you have a custom Copilot agent wired to these tools, prompts can be as simple as:
-
-- `Store this interaction in local memory for billing-service.`
-- `Search local memory for ADO-4321.`
-- `Show the 5 most recent local interactions for billing-service.`
-- `Summarize local interactions by model version.`
-- `Clear local memory before 2026-03-01 for billing-service.`
-
-## Post-Interaction Command
-
-If you want a local notification after each interaction, set `copilotLocalMemory.postInteractionCommand`.
-
-Example on macOS using a sound effect:
-
-```json
-{
-	"copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
-}
-```
-
-Another macOS example using the system voice:
-
-```json
-{
-	"copilotLocalMemory.postInteractionCommand": "say Mission accomplished. Victory lap canceled. Back to work."
-}
-```
-
-Example on Windows using PowerShell:
-
-```json
-{
-	"copilotLocalMemory.postInteractionCommand": "powershell -NoProfile -Command \"[console]::beep(880,300)\""
-}
-```
-
-Example on Linux using `paplay`:
-
-```json
-{
-	"copilotLocalMemory.postInteractionCommand": "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
-}
-```
-
-Another Linux example using `spd-say`:
-
-```json
-{
-	"copilotLocalMemory.postInteractionCommand": "spd-say 'Copilot task complete'"
-}
-```
-
-Use a command that exists on your machine and produces the kind of notification you want.
-
-The hook is controlled separately by `copilotLocalMemory.enablePostInteractionCommand`.
-
-If `copilotLocalMemory.enabled` is `false` but `copilotLocalMemory.enablePostInteractionCommand` is `true`, the extension skips local storage and still runs the configured post-interaction command when the log tool is invoked.
-
-## Inspect The SQLite Database
-
-The extension stores data in a local SQLite file named `copilot-local-memory.sqlite`.
-
-On macOS, the file is typically located under VS Code global storage:
+Copilot Local Memory saves selected GitHub Copilot chat interactions in a local SQLite database on your machine so you can search, summarize, and reuse earlier work without a separate tracking service.
+
+## Why Use It
+
+- Keep Copilot history on your own machine.
+- Recover earlier answers, tickets, pull requests, and patterns.
+- Summarize recent work and clear old records when needed.
+
+## Quick Start
+
+1. Install `Copilot Local Memory` from the VS Code Extensions view.
+2. Create `.github/agents/LocalMemoryAgent.agent.md` in your workspace.
+3. Paste the `LocalMemoryAgent` template from this README.
+4. In Copilot Chat tool configuration, enable these tools for `LocalMemoryAgent`:
+   - `copilotLocalMemory_logInteraction`
+   - `copilotLocalMemory_queryInteractions`
+   - `copilotLocalMemory_getRecentInteractions`
+   - `copilotLocalMemory_summarizeInteractions`
+   - `copilotLocalMemory_clearInteractions`
+5. Run this prompt in Copilot Chat:
 
 ```text
-~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+@LocalMemoryAgent Explain what this repository does and log the interaction locally.
 ```
 
-If you are using VS Code Insiders, the base path is usually:
+The local database file is created after the first successful write.
 
-```text
-~/Library/Application Support/Code - Insiders/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
+## Which Option Should I Use?
+
+| Option | Best For | Notes |
+| --- | --- | --- |
+| `LocalMemoryAsk` | Looking up previous answers, tickets, pull requests, and recent work | Retrieval-first behavior. |
+| `LocalMemoryAgent` | Daily use with logging plus occasional retrieval | Best default starting point. |
+| `LocalMemoryPlan` | Building plans, next steps, and action lists from prior Copilot context | Planning-first behavior. |
+| `LocalMemoryTicket` | Working repeatedly on the same ticket or pull request | Ticket-aware logging and retrieval. |
+
+If you are unsure, start with `LocalMemoryAgent`.
+
+## Recommended Settings
+
+This is a practical starting point:
+
+```json
+{
+  "copilotLocalMemory.enabled": true,
+  "copilotLocalMemory.projectName": "my-workspace",
+  "copilotLocalMemory.storePrompts": true,
+  "copilotLocalMemory.storeResponses": true,
+  "copilotLocalMemory.defaultQueryLimit": 20,
+  "copilotLocalMemory.enablePostInteractionCommand": true,
+  "copilotLocalMemory.postInteractionCommand": "afplay /System/Library/Sounds/Glass.aiff"
+}
 ```
 
-If you are not sure where the file is, run:
+## What Is Stored Locally?
 
-```bash
-find ~/Library/Application\ Support -name copilot-local-memory.sqlite 2>/dev/null
-```
+Data is stored only when a local-memory tool is invoked.
 
-### Open it in VS Code
+| Stored Field | Notes |
+| --- | --- |
+| `project_name` | Provided by the tool call, the setting, or the workspace name fallback |
+| `request_type` | Lets you separate built-in usage from different custom agents |
+| `prompt_text` | Stored only when `copilotLocalMemory.storePrompts` is enabled |
+| `response_text` | Stored only when `copilotLocalMemory.storeResponses` is enabled |
+| `timestamp` | Added automatically when the record is written |
+| `model_version` | Optional metadata if the caller provides it |
+| `finish_reason` | Optional metadata if the runtime provides it |
+| `ticket_id`, `ticket_description`, `pull_request_id` | Optional metadata for better retrieval |
 
-Recommended extension:
+Not included by default:
 
-```vscode-extensions
-bowlerr.sqlite-intelliview-vscode
-```
+- No separate remote tracking service.
+- No web dashboard.
+- No automatic database file before the first successful local-memory write.
+- No prompt or response storage if those settings are turned off.
 
-After installing a SQLite viewer extension:
+## Where Your Data Is Stored
 
-1. Open the Command Palette.
-2. Run the extension's database open command.
-3. When the macOS file picker opens, press `Cmd+Shift+G` to open the "Go to the folder" input.
-4. Paste the full database path:
+Copilot Local Memory stores data in `copilot-local-memory.sqlite` inside VS Code extension global storage.
 
-```text
-~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite
-```
+Typical file locations:
 
-5. Press `Enter` and open the file.
-6. Browse the `copilot_usage` table.
+- macOS: `~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite`
+- Windows: `%APPDATA%\Code\User\globalStorage\shuren-li.copilot-local-memory-extension\copilot-local-memory.sqlite`
+- Linux: `~/.config/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite`
 
-If you prefer to open the folder first, use:
+This file stays on your machine unless you choose to copy or share it.
 
-```text
-~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
-```
+## How To Open The Local Database
 
-### Open it in the VS Code terminal
+### Option 1: Open it in VS Code
 
-If you have the SQLite CLI installed, you can inspect the DB directly from the integrated terminal:
+1. Install a SQLite viewer extension, for example `bowlerr.sqlite-intelliview-vscode`.
+2. Open the viewer command from the Command Palette.
+3. Open the `copilot-local-memory.sqlite` file from the path above.
+
+### Option 2: Open it in a terminal
+
+If `sqlite3` is installed, run:
 
 ```bash
 sqlite3 "$HOME/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/copilot-local-memory.sqlite"
 ```
 
-Then run:
+Then inspect the data:
 
 ```sql
 .tables
-SELECT * FROM copilot_usage LIMIT 10;
+SELECT * FROM copilot_usage ORDER BY timestamp DESC LIMIT 10;
 ```
 
-### Troubleshooting
+## Create A Custom Agent
 
-If the file does not open, check these common cases first.
+For a shared workspace, create your agent file inside `.github/agents/`:
 
-#### 1. The shell path fails because of spaces
+1. Create the folder `.github/agents` in your workspace if it does not exist.
+2. Create one of these files:
+   - `.github/agents/LocalMemoryAsk.agent.md`
+   - `.github/agents/LocalMemoryAgent.agent.md`
+   - `.github/agents/LocalMemoryPlan.agent.md`
+   - `.github/agents/LocalMemoryTicket.agent.md`
+3. Paste the matching ready-to-use template from this README into the file.
+4. Save the file.
+5. Open Copilot Chat.
+6. Open the tool configuration for that agent.
+7. Enable all five local-memory tools for that agent.
+8. Run one of the starter prompts listed under that agent.
 
-This will fail on macOS because `Application Support` contains a space:
+### Tools To Enable
 
-```bash
-ls ~/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+- `copilotLocalMemory_logInteraction`
+- `copilotLocalMemory_queryInteractions`
+- `copilotLocalMemory_getRecentInteractions`
+- `copilotLocalMemory_summarizeInteractions`
+- `copilotLocalMemory_clearInteractions`
+
+## Ready-To-Use Agent Templates
+
+These templates are intended to work as-is.
+
+### `LocalMemoryAsk`
+
+```md
+---
+name: LocalMemoryAsk
+description: Answer questions by using local Copilot memory to find earlier prompts, responses, tickets, pull requests, and recent work.
+tools: ["copilotLocalMemory_logInteraction", "copilotLocalMemory_queryInteractions", "copilotLocalMemory_getRecentInteractions", "copilotLocalMemory_summarizeInteractions", "copilotLocalMemory_clearInteractions"]
+---
+
+# LocalMemoryAsk
+
+You are a retrieval-first assistant for Copilot Local Memory.
+
+## Behavior
+
+- Keep tool usage private.
+- Use local-memory retrieval before answering questions about earlier work, tickets, pull requests, recent activity, or summaries.
+- Use `copilotLocalMemory_queryInteractions` for searches, `copilotLocalMemory_getRecentInteractions` for latest activity, and `copilotLocalMemory_summarizeInteractions` for grouped history.
+- Use `copilotLocalMemory_clearInteractions` only for explicit delete requests.
+
+## Always log
+
+After forming the final answer, call `copilotLocalMemory_logInteraction` with:
+
+- `project_name`: omit it unless you want to override `copilotLocalMemory.projectName` or the workspace-name fallback
+- `request_type`: `LocalMemoryAsk`
+- `prompt_text`: the user's message
+- `response_text`: your final answer
+
+Include `ticket_id`, `ticket_description`, and `pull_request_id` only when they are present in the user's request. Do not fabricate `finish_reason`.
+
+## Output rule
+
+- Answer naturally.
+- Do not expose tool names, JSON, or internal workflow.
+- If you mention logging, keep it short, for example: `Logged locally.`
 ```
 
-Use either quotes:
+Starter prompts:
 
-```bash
-ls "$HOME/Library/Application Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/"
+```text
+@LocalMemoryAsk Search local memory for ADO-4321 and tell me what I decided.
 ```
 
-Or escaped spaces:
-
-```bash
-ls ~/Library/Application\ Support/Code/User/globalStorage/shuren-li.copilot-local-memory-extension/
+```text
+@LocalMemoryAsk Show the 5 most recent local interactions and summarize the pattern.
 ```
 
-#### 2. The database file does not exist yet
-
-The SQLite file is only created after the extension initializes and successfully writes local memory.
-
-If this returns nothing:
-
-```bash
-find "$HOME/Library/Application Support/Code/User/globalStorage" -name "copilot-local-memory.sqlite"
+```text
+@LocalMemoryAsk Find earlier interactions about payment retries.
 ```
 
-then the database has not been created in the current VS Code profile yet.
+### `LocalMemoryAgent`
 
-#### 3. The chat session says local-memory logging is unavailable
+```md
+---
+name: LocalMemoryAgent
+description: Handle day-to-day work, log each interaction locally, and use local Copilot memory when the user asks for previous context.
+tools: ["copilotLocalMemory_logInteraction", "copilotLocalMemory_queryInteractions", "copilotLocalMemory_getRecentInteractions", "copilotLocalMemory_summarizeInteractions", "copilotLocalMemory_clearInteractions"]
+---
 
-If Copilot responds with a message like `Local-memory logging unavailable in this session`, the local-memory tool was not available in that window or session, so no database write happened.
+# LocalMemoryAgent
 
-The most reliable local test flow is:
+You are the default daily-use agent for Copilot Local Memory.
 
-1. Open this extension repository in VS Code.
-2. Run `npm install` and `npm run build` if needed.
-3. Press `F5` to start the Extension Development Host.
-4. In the new host window, open the `sample` folder from this repository.
-5. Use Copilot Chat in that sample workspace to trigger the local-memory tools.
-6. Check again for `copilot-local-memory.sqlite` after the interaction completes.
+## Behavior
 
-## Clear Local Memory
+- Answer the user's request directly.
+- Use local-memory retrieval when earlier work, tickets, pull requests, recent activity, or patterns would improve the answer.
+- If retrieval is not needed, answer directly and still log the interaction.
+- Use `copilotLocalMemory_clearInteractions` only for explicit delete requests.
 
-Use `copilotLocalMemory_clearInteractions` to delete stored local history.
+## Always log
 
-Supported criteria:
+After forming the final answer, call `copilotLocalMemory_logInteraction` with:
 
-- `project_name`
-- `request_type`
-- `before_date`
-- `delete_all`
+- `project_name`: omit it unless you want to override `copilotLocalMemory.projectName` or the workspace-name fallback
+- `request_type`: `LocalMemoryAgent`
+- `prompt_text`: the user's message
+- `response_text`: your final answer
 
-Safety rule:
+Include ticket or pull-request metadata only when relevant. Do not invent `finish_reason`.
 
-- There are only two valid modes:
-- Filtered delete: provide one or more of `project_name`, `request_type`, or `before_date`.
-- Full delete: set `delete_all` to `true`.
-- An empty object is rejected on purpose so the tool cannot wipe data accidentally.
+## Output rule
+
+- Do not expose tool calls or internal workflow.
+- Keep the response natural and task-focused.
+- If you mention logging, use a short note such as `Logged locally.`
+```
+
+Starter prompts:
+
+```text
+@LocalMemoryAgent Explain this repository and log the interaction locally.
+```
+
+```text
+@LocalMemoryAgent Show recent interactions about deployment issues, then suggest the next action.
+```
+
+```text
+@LocalMemoryAgent Review pull request 456 and keep a local record.
+```
+
+### `LocalMemoryPlan`
+
+```md
+---
+name: LocalMemoryPlan
+description: Create plans and next steps by using local Copilot memory to recover relevant earlier context before answering.
+tools: ["copilotLocalMemory_logInteraction", "copilotLocalMemory_queryInteractions", "copilotLocalMemory_getRecentInteractions", "copilotLocalMemory_summarizeInteractions", "copilotLocalMemory_clearInteractions"]
+---
+
+# LocalMemoryPlan
+
+You are a planning-first assistant for Copilot Local Memory.
+
+## Behavior
+
+- When the user asks for a plan, roadmap, next steps, task breakdown, or implementation sequence, recover relevant local-memory context first when it will improve the answer.
+- Use `copilotLocalMemory_queryInteractions`, `copilotLocalMemory_getRecentInteractions`, or `copilotLocalMemory_summarizeInteractions` when the request refers to earlier work.
+- Return a clear plan with concrete steps.
+- Use `copilotLocalMemory_clearInteractions` only for explicit delete requests.
+
+## Always log
+
+After forming the final answer, call `copilotLocalMemory_logInteraction` with:
+
+- `project_name`: omit it unless you want to override `copilotLocalMemory.projectName` or the workspace-name fallback
+- `request_type`: `LocalMemoryPlan`
+- `prompt_text`: the user's message
+- `response_text`: your final answer
+
+Include ticket or pull-request metadata only when relevant. Do not invent `finish_reason`.
+
+## Output rule
+
+- Do not expose tool calls or internal workflow.
+- Return a concise, structured plan.
+- If you mention logging, use a short note such as `Logged locally.`
+```
+
+Starter prompts:
+
+```text
+@LocalMemoryPlan Look at my recent local interactions and create a plan for the next 3 tasks.
+```
+
+```text
+@LocalMemoryPlan Build an implementation plan from my earlier payment-retry discussions.
+```
+
+```text
+@LocalMemoryPlan Summarize this week's local interactions and turn them into an action list.
+```
+
+### `LocalMemoryTicket`
+
+```md
+---
+name: LocalMemoryTicket
+description: Work in the context of one ticket or pull request, use local Copilot memory to recover related history, and log every interaction with ticket-aware metadata.
+tools: ["copilotLocalMemory_logInteraction", "copilotLocalMemory_queryInteractions", "copilotLocalMemory_getRecentInteractions", "copilotLocalMemory_summarizeInteractions", "copilotLocalMemory_clearInteractions"]
+---
+
+# LocalMemoryTicket
+
+You are a ticket-aware coding, debugging, and refactoring assistant for Copilot Local Memory.
+
+## Behavior
+
+- Prefer one ticket or one pull request at a time.
+- Scan the current message for ticket IDs and pull request IDs such as `ADO-1234`, `PROJ-567`, `#1234`, `PR-456`, or `pull request 456`.
+- When a ticket or pull request is present, recover related local-memory history before answering.
+- Use `copilotLocalMemory_queryInteractions` for ticket- and PR-oriented lookups, `copilotLocalMemory_getRecentInteractions` for latest related work, and `copilotLocalMemory_summarizeInteractions` for repeated-ticket patterns.
+- Use `copilotLocalMemory_clearInteractions` only for explicit delete requests.
+
+## Always log
+
+After forming the final answer, call `copilotLocalMemory_logInteraction` with:
+
+- `project_name`: omit it unless you want to override `copilotLocalMemory.projectName` or the workspace-name fallback
+- `request_type`: `LocalMemoryTicket`
+- `prompt_text`: the user's message
+- `response_text`: your final answer
+- `ticket_id`: include it when the user's message contains a ticket identifier
+- `ticket_description`: include it when the user gave a short ticket description
+- `pull_request_id`: include it when the user's message contains a pull request identifier
+
+Do not fabricate `finish_reason`.
+
+## Output rule
+
+- Answer naturally and stay focused on the ticket or pull request.
+- Do not expose tool names, JSON, or internal workflow.
+- If you mention logging, keep it short, for example: `Logged locally.`
+```
+
+Starter prompts:
+
+```text
+@LocalMemoryTicket Search local memory for ADO-4321 and summarize what changed across earlier interactions.
+```
+
+```text
+@LocalMemoryTicket Review pull request 456, compare it with earlier local interactions, and suggest the next step.
+```
+
+```text
+@LocalMemoryTicket I am still working on ADO-4321 payment retry handling. Find related local history and propose a safe refactor.
+```
+
+## Advanced Usage
+
+To get better results:
+
+1. Use a dedicated custom agent instead of relying only on built-in chat modes.
+2. Keep `project_name` stable so retrieval stays clean and grouped correctly.
+3. Include ticket IDs and pull request IDs in your prompts when they matter.
+4. Use `LocalMemoryAsk` for lookups, `LocalMemoryAgent` for daily work, `LocalMemoryPlan` for next-step planning, and `LocalMemoryTicket` for repeated work on the same ticket or PR.
+5. Review and clear older records periodically if you want a narrower history.
+
+## Troubleshooting
+
+### The agent cannot see the local-memory tools
+
+- Open the tool configuration for that agent.
+- Confirm all five `copilotLocalMemory_*` tools are enabled.
+- Retry the prompt after the tools are enabled.
+
+### The database file does not exist yet
+
+- The database file is created only after the first successful local-memory write.
+- Run one logging prompt first.
+- Then check the SQLite file path again.
+
+## Need More Details?
+
+- Source repository: <https://github.com/lishuren/Copilot-Local-Memory-Extension>
+- Developer and packaging guide: <https://github.com/lishuren/Copilot-Local-Memory-Extension/blob/main/docs/development.md>
+- Sample workspace guide: <https://github.com/lishuren/Copilot-Local-Memory-Extension/blob/main/sample/README.md>
+- Sample ready-to-use agents: <https://github.com/lishuren/Copilot-Local-Memory-Extension/tree/main/sample/.github/agents>
+
+## Fallback: Use It Without Custom Agents
+
+This works, but it is less robust and usually more cumbersome than a dedicated custom agent.
+
+The extension contributes local-memory tools to Copilot Chat. If those tools are available in the mode you are using, you can ask Copilot to save, search, summarize, or clear local memory directly.
+
+Fallback examples:
+
+```text
+Store this interaction in local memory for project demo-workspace.
+```
+
+```text
+Search local memory for ADO-4321 and summarize what I worked on.
+```
+
+```text
+Show my 5 most recent local-memory interactions.
+```
+
+For repeatable results, prefer a custom agent.
+
+## FAQ
+
+### Why do I need this extension?
+
+Use it when you want a searchable local record of useful Copilot interactions without relying on a separate remote tracking service.
+
+### Can I use the extension without custom agents?
+
+Yes. Built-in chat modes can use the extension when the local-memory tools are available. Custom agents are recommended because they make the behavior more consistent and easier to repeat.
+
+### How do I make Copilot use the extension more effectively?
+
+Use one of the ready-to-use agents, keep the local-memory tools enabled, keep `project_name` stable, and include ticket IDs or pull request IDs when you want better retrieval. If you work on the same ticket or pull request across several interactions, use `LocalMemoryTicket`.
+
+### When should I use `LocalMemoryTicket`?
+
+Use it when several interactions belong to the same ticket or pull request and you want Copilot to recover that history before answering.
 
 Examples:
 
-```json
-{
-	"project_name": "LogUsage"
-}
-```
+- `I am still working on ADO-4321. Find related local history and suggest the safest next change.`
+- `Review pull request 456 again and compare it with my earlier local interactions.`
 
-```json
-{
-	"request_type": "DemoLogUsage",
-	"before_date": "2026-03-01T00:00:00Z"
-}
-```
+### Where do I ask questions, report issues, or request more features?
 
-```json
-{
-	"delete_all": true
-}
-```
+Use the GitHub repository for feedback and requests:
+
+- Issues and feature requests: <https://github.com/lishuren/Copilot-Local-Memory-Extension/issues>
+- Repository: <https://github.com/lishuren/Copilot-Local-Memory-Extension>

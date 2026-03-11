@@ -1,8 +1,15 @@
-# LogUsage Local Memory Test Guide
+# Local Memory Sample Workspace
 
-This workspace is a focused test harness for the local Copilot memory extension.
+This sample workspace is a ready-to-run test harness for Copilot Local Memory.
 
-It is configured to use the `DemoLogUsage` custom agent together with these local-memory tools:
+It includes four custom agents that match the templates documented in the root README:
+
+- `LocalMemoryAsk`
+- `LocalMemoryAgent`
+- `LocalMemoryPlan`
+- `LocalMemoryTicket`
+
+All three agents use the same local-memory tools:
 
 - `copilotLocalMemory_logInteraction`
 - `copilotLocalMemory_queryInteractions`
@@ -10,41 +17,48 @@ It is configured to use the `DemoLogUsage` custom agent together with these loca
 - `copilotLocalMemory_summarizeInteractions`
 - `copilotLocalMemory_clearInteractions`
 
-## Workspace Purpose
+## What This Sample Is For
 
 Use this workspace to verify that:
 
-- Copilot interactions are stored locally
-- local history can be searched and filtered
-- recent interactions can be retrieved
-- summary counts can be generated
-- local memory can be cleared with simple criteria
-- the optional post-log sound hook runs after successful writes
+- Copilot interactions are stored locally.
+- Local history can be searched and filtered.
+- Recent interactions can be retrieved.
+- Summary counts can be generated.
+- Local memory can be cleared with explicit criteria.
+- The optional post-interaction command can run after successful writes.
 
-## Optional Metadata Rule
+## Included Agents
 
-This demo keeps `project_name`, `ticket_id`, and `pull_request_id` in the record model because they improve search and cleanup.
-
-- `project_name` is fixed to `LogUsage` by the demo agent for this workspace
-- `ticket_id` and `pull_request_id` should only be included when the prompt actually relates to a ticket or PR
-- these fields are metadata for retrieval, not required user settings
+| Agent | Best For |
+| --- | --- |
+| `LocalMemoryAsk` | Retrieval-first questions about earlier work, tickets, pull requests, and summaries |
+| `LocalMemoryAgent` | Default daily usage with logging plus optional retrieval |
+| `LocalMemoryPlan` | Plans, next steps, task breakdowns, and action lists based on prior context |
+| `LocalMemoryTicket` | Repeated work on the same ticket or pull request with ticket-aware retrieval |
 
 ## Required Setup
 
-1. Install the local extension: `Shuren-Li.copilot-local-memory-extension`
-2. Open this `LogUsage` folder in VS Code
-3. Open the `DemoLogUsage` agent tool configuration and make sure the local-memory tools are enabled for that agent
-4. Use the `@DemoLogUsage` agent in Copilot Chat
+1. Install `Shuren-Li.copilot-local-memory-extension`.
+2. Open this `sample` folder in VS Code.
+3. Open Copilot Chat.
+4. Enable the five local-memory tools for each of these agents:
+   - `LocalMemoryAsk`
+   - `LocalMemoryAgent`
+   - `LocalMemoryPlan`
+  - `LocalMemoryTicket`
+5. Run one of the prompts below.
 
 This workspace already includes local-memory settings in `.vscode/settings.json`.
 
-The extension being installed is not enough by itself for custom-agent testing. The `DemoLogUsage` agent also needs the local-memory tools enabled in its tool list; otherwise the agent cannot invoke them.
+If the editor shows `Unknown tool` warnings in the sample agent files, install or run the extension first. Those agents are meant to be used with Copilot Local Memory available in the active VS Code session.
 
-## Current Local Settings
+## Workspace Settings
 
 ```json
 {
   "copilotLocalMemory.enabled": true,
+  "copilotLocalMemory.projectName": "LogUsage",
   "copilotLocalMemory.storePrompts": true,
   "copilotLocalMemory.storeResponses": true,
   "copilotLocalMemory.defaultQueryLimit": 20,
@@ -53,137 +67,120 @@ The extension being installed is not enough by itself for custom-agent testing. 
 }
 ```
 
-If you set `copilotLocalMemory.enabled` to `false` but leave `copilotLocalMemory.enablePostInteractionCommand=true`, the log tool will skip storage and still run the configured post-interaction command.
-
 ## Quick Test Flow
 
-Run the prompts below in order if you want a clean end-to-end verification:
+1. Log a normal interaction.
+2. Retrieve an earlier interaction.
+3. Summarize a group of interactions.
+4. Create a plan from stored context.
+5. Clear some records with explicit criteria.
 
-1. Create a few records with normal chat prompts.
-2. Search those records by ticket ID or text.
-3. Fetch recent interactions.
-4. Summarize the stored interactions.
-5. Clear a subset of interactions or wipe all data explicitly.
+## Ready-To-Use Prompts
 
-## Copy-Paste Prompt Examples
-
-### 1. Log a basic interaction
+### `LocalMemoryAsk`
 
 ```text
-@DemoLogUsage Explain how local Copilot memory works in this workspace.
+@LocalMemoryAsk Search local memory for ADO-4321 and tell me what I decided.
 ```
 
 ```text
-@DemoLogUsage Summarize ticket ADO-4321 and suggest next steps.
+@LocalMemoryAsk Show the 5 most recent local interactions and summarize the pattern.
 ```
 
 ```text
-@DemoLogUsage Review pull request 456 and give me a short summary.
+@LocalMemoryAsk Find earlier interactions mentioning deployment issues.
 ```
 
-### 2. Search local history
+### `LocalMemoryAgent`
 
 ```text
-@DemoLogUsage Search local memory for ADO-4321.
-```
-
-```text
-@DemoLogUsage Find earlier interactions mentioning payment retries.
+@LocalMemoryAgent Explain how this sample workspace uses local memory and log the interaction locally.
 ```
 
 ```text
-@DemoLogUsage Query local interactions from today about pull request 456.
+@LocalMemoryAgent Review pull request 456 and keep a local record.
 ```
 
 ```text
-@DemoLogUsage Search local memory for deployment issues and show matching records.
+@LocalMemoryAgent Show recent interactions about payment retries, then suggest the next action.
 ```
 
-### 3. Retrieve recent interactions
+### `LocalMemoryPlan`
 
 ```text
-@DemoLogUsage Show the 5 most recent local interactions.
-```
-
-```text
-@DemoLogUsage Show the 10 most recent local interactions for DemoLogUsage.
-```
-
-### 4. Summarize stored data
-
-```text
-@DemoLogUsage Summarize local interactions by request type.
+@LocalMemoryPlan Look at my recent local interactions and create a plan for the next 3 tasks.
 ```
 
 ```text
-@DemoLogUsage Show counts of local interactions for the last 7 days.
+@LocalMemoryPlan Build an implementation plan from my earlier deployment discussions.
 ```
 
 ```text
-@DemoLogUsage Summarize local memory by model version.
+@LocalMemoryPlan Summarize this week's local interactions and turn them into an action list.
+```
+
+### `LocalMemoryTicket`
+
+```text
+@LocalMemoryTicket Search local memory for ADO-4321 and summarize what changed across earlier interactions.
 ```
 
 ```text
-@DemoLogUsage Summarize local memory by finish reason.
-```
-
-### 5. Retrieve then answer
-
-```text
-@DemoLogUsage Search local memory for deployment issues, then tell me the common pattern.
+@LocalMemoryTicket Review pull request 456, compare it with earlier local interactions, and suggest the next step.
 ```
 
 ```text
-@DemoLogUsage Show recent ticket-related interactions and summarize what I was working on.
+@LocalMemoryTicket I am still working on ADO-4321 payment retry handling. Find related local history and propose a safe refactor.
+```
+
+## Clear Local Memory
+
+All included agents can clear local memory when you ask explicitly.
+
+```text
+@LocalMemoryAsk Clear local memory for project LogUsage.
 ```
 
 ```text
-@DemoLogUsage Find the most relevant local interactions about payment retries and suggest the next action.
-```
-
-### 6. Clear local memory
-
-```text
-@DemoLogUsage Clear local memory for project LogUsage.
+@LocalMemoryAgent Delete local interactions before 2026-03-01.
 ```
 
 ```text
-@DemoLogUsage Delete local interactions before 2026-03-01.
+@LocalMemoryPlan Clear all local memory.
 ```
 
-```text
-@DemoLogUsage Clear all local memory.
-```
-
-The clear tool supports these simple criteria:
+The clear tool supports these criteria:
 
 - `project_name`
 - `request_type`
 - `before_date`
 - `delete_all`
 
-Safety rule:
-
-- Use one of these two modes:
-- Filtered delete: provide `project_name`, `request_type`, or `before_date`.
-- Full delete: set `delete_all=true`.
-- An empty request is rejected so the demo agent cannot clear everything by accident.
-
 ## Expected Behavior
 
-- Each interaction should still be logged after the response is produced.
-- Retrieval requests should use the appropriate local-memory tool before the final answer.
-- Clear requests should use the clear tool with criteria or an explicit full-wipe confirmation.
-- A sound should play after the interaction because `copilotLocalMemory.postInteractionCommand` is configured.
+- The final answer should be shown in natural language.
+- The interaction should be logged after the answer is formed.
+- Retrieval requests should use the relevant local-memory tool before the final answer.
+- A sound can play after the interaction because `copilotLocalMemory.postInteractionCommand` is configured.
 
-## Finish Reason Behavior
+## Troubleshooting
 
-- `finish_reason` is stored only when the tool caller includes it in the `copilotLocalMemory_logInteraction` input.
-- In the current VS Code custom-agent flow, the actual finish reason is usually not exposed to the agent automatically.
-- Because of that, an empty `finish_reason` value in the SQLite table is expected for `@DemoLogUsage` unless you have another caller that can populate it explicitly.
+### The agent does not use local memory
+
+- Confirm the local-memory tools are enabled for that specific agent.
+- Retry with one of the exact prompts from this file.
+- If the editor reports `Unknown tool`, make sure the extension is installed or running in an Extension Development Host.
+
+### The SQLite file does not exist yet
+
+- Run a logging prompt first.
+- Then check the file path again from the root README.
 
 ## Related Files
 
-- `.github/agents/DemoLogUsage.agent.md`
+- `.github/agents/LocalMemoryAsk.agent.md`
+- `.github/agents/LocalMemoryAgent.agent.md`
+- `.github/agents/LocalMemoryPlan.agent.md`
+- `.github/agents/LocalMemoryTicket.agent.md`
 - `.github/copilot-instructions.md`
 - `.vscode/settings.json`
